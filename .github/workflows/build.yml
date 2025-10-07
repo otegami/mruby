@@ -54,3 +54,38 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           rake -m test:run:serial
+
+  Windows-ARM64-CLANG:
+    runs-on: windows-11-arm
+    timeout-minutes: 10
+    env:
+      MRUBY_CONFIG: ci/gcc-clang
+      CC: 'clang'
+      CXX: 'clang++'
+      LD: 'clang'
+    steps:
+      - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"
+        uses: actions/checkout@v5
+      - name: Setup MSYS2 (CLANGARM64)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANGARM64
+          update: true
+          install: >-
+            mingw-w64-clang-aarch64-toolchain
+            make
+            pkgconf
+            mingw-w64-clang-aarch64-ruby
+      - name: Ruby version
+        shell: msys2 {0}
+        run: ruby -v
+      - name: Compiler version
+        shell: msys2 {0}
+        run: clang --version
+      - name: Dump Predefined Macros
+        shell: msys2 {0}
+        run: |
+          echo | clang -dM -E - | grep -E '__MINGW64__|__GNUC__|__aarch64__|_WIN64' || true
+      - name: Build and test
+        shell: msys2 {0}
+        run: rake -m test:run:serial
